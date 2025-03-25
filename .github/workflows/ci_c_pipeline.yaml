@@ -1,0 +1,64 @@
+name: Deploy Microservices
+
+on:
+  push:
+    paths:
+      - "*/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SERVICE: agent-service
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: "latest"
+          project_id: ${{ secrets.GCP_PROJECT_ID }} # Specify the project ID
+          skip_install: false # You can keep this as false if you want to install gcloud
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }} # Use the service account key from GitHub Secrets
+
+      - name: Configure gcloud project
+        run: |
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Authenticate with GKE
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies & Run Unit Tests
+        run: |
+          echo "Service name is: $SERVICE"
+          pip install -r requirements.txt
+          pytest tests/unit_tests.py --maxfail=1 --disable-warnings -q
+
+      - name: Create Kubernetes Secret for DATABASE_URL
+        run: |
+          kubectl create secret generic ${SERVICE}-db-secret \
+          --from-literal=DATABASE_URL=postgresql://${{ secrets.DATABASE_USER }}:${{ secrets.DATABASE_PASSWORD }}@${{ secrets.DATABASE_ENDPOINT }}:5432/${{ secrets.DATABASE_NAME }} || echo "Secret already exists"
+
+      - name: Build & Push Docker Image to GCP
+        run: |
+          gcloud auth configure-docker
+          docker build -t gcr.io/$GCP_PROJECT_ID/$SERVICE:latest .
+          docker push gcr.io/$GCP_PROJECT_ID/$SERVICE:latest
+
+      - name: Deploy to GKE
+        run: |
+          kubectl apply -f $SERVICE/k8s/deployment.yaml
+          kubectl rollout status deployment/$SERVICE-deployment
