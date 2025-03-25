@@ -52,6 +52,9 @@ jobs:
           kubectl create secret generic ${SERVICE}-db-secret \
           --from-literal=DATABASE_URL=postgresql://${{ secrets.DATABASE_USER }}:${{ secrets.DATABASE_PASSWORD }}@${{ secrets.DATABASE_ENDPOINT }}:5432/${{ secrets.DATABASE_NAME }} || echo "Secret already exists"
 
+      - name: Authenticate Docker with Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
       - name: Build & Push Docker Image to GCP
         run: |
           gcloud auth configure-docker
