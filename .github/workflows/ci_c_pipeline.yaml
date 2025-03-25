@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "Service name is: $SERVICE"
           pip install -r requirements.txt
-          pytest tests/unit_tests.py --maxfail=1 --disable-warnings -q
+          pytest tests/unit_test.py --maxfail=1 --disable-warnings -q
 
       - name: Create Kubernetes Secret for DATABASE_URL
         run: |
