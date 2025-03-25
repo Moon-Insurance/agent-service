@@ -62,5 +62,5 @@ jobs:
 
       - name: Deploy to GKE
         run: |
-          kubectl apply -f $SERVICE/k8s/deployment.yaml
+          kubectl apply -f k8s/deployment.yaml
           kubectl rollout status deployment/$SERVICE-deployment
