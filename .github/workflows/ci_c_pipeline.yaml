@@ -20,7 +20,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
         with:
           version: "latest"
-          project_id: ${{ secrets.GCP_PROJECT_ID }} # Specify the project ID
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
           skip_install: false # You can keep this as false if you want to install gcloud
 
       - name: Authenticate with GCP
