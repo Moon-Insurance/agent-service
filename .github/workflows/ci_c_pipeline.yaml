@@ -45,6 +45,7 @@ jobs:
         run: |
           echo "Service name is: $SERVICE"
           pip install -r requirements.txt
+          export SQLALCHEMY_DATABASE_URI="sqlite:///:memory:"  # Use in-memory DB for tests
           pytest tests/unit-test.py --maxfail=1 --disable-warnings -q
 
       - name: Create Kubernetes Secret for DATABASE_URL
