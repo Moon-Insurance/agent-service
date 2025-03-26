@@ -57,6 +57,16 @@ jobs:
           kubectl create secret generic ${SERVICE}-db-secret \
           --from-literal=DATABASE_URL=postgresql://${{ secrets.DATABASE_USER }}:${{ secrets.DATABASE_PASSWORD }}@${{ secrets.DATABASE_ENDPOINT }}:5432/${{ secrets.DATABASE_NAME }} || echo "Secret already exists"
 
+      - name: Replace PROJECT_ID in migration-job.yaml
+        run: |
+          sed -i "s/GCP_PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g" k8s/migration-job.yaml
+          sed -i "s/GCP_REGION/${{ secrets.GCP_REGION }}/g" k8s/migration-job.yaml
+
+      - name: Run Migration Job
+        run: |
+          kubectl apply -f k8s/migration-job.yaml
+          kubectl wait --for=condition=complete job/$SERVICE-migrations --timeout=120s || echo "Migration job failed"
+
       - name: Authenticate Docker with Artifact Registry
         run: gcloud auth configure-docker ${{ secrets.GKE_REGION }}-docker.pkg.dev
 
@@ -65,7 +75,42 @@ jobs:
           docker build -t ${{ secrets.GKE_REGION }}-docker.pkg.dev/$GCP_PROJECT_ID/moon-insurance/$SERVICE:latest .
           docker push ${{ secrets.GKE_REGION }}-docker.pkg.dev/$GCP_PROJECT_ID/moon-insurance/$SERVICE:latest
 
-      - name: Deploy to GKE
+      - name: Replace PROJECT_ID and REGION in deployment.yaml
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/$SERVICE-deployment
+          sed -i "s/GCP_PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g" k8s/deployment.yaml
+          sed -i "s/GCP_REGION/${{ secrets.GCP_REGION }}/g" k8s/deployment.yaml
+
+      - name: Check for First Deployment (Initial Setup)
+        id: first_deployment
+        run: |
+          if kubectl get deployment $SERVICE-blue; then
+            echo "Blue deployment exists. Continuing with green update."
+            echo "is_initial=false" >> $GITHUB_ENV
+          else
+            echo "Blue deployment does not exist. Initial deployment setup."
+            echo "is_initial=true" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy Blue (Initial Deployment)
+        if: env.is_initial == 'true'
+        run: |
+          kubectl apply -f k8s/deployment-blue.yaml
+          kubectl apply -f k8s/deployment-blue.yaml
+          kubectl rollout status deployment/$SERVICE-blue
+
+      - name: Deploy Green (New Version)
+        run: |
+          kubectl apply -f k8s/deployment-green.yaml
+          kubectl apply -f k8s/service-green.yaml
+          kubectl rollout status deployment/$SERVICE-green
+
+      - name: Switch Traffic to Green (Update Service Selector)
+        run: |
+          kubectl patch service $SERVICE \
+            -p '{"spec":{"selector":{"version":"green"}}}'
+
+      - name: (Optional) Delete Blue Deployment
+        if: env.is_initial == 'false'
+        run: |
+          kubectl delete deployment $SERVICE-blue
+          kubectl delete service $SERVICE-blue
