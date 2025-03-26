@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: agent-service
-          image: GCP_REGION-docker.pkg.dev/GCP_PROJECT_ID/my-agent-service-repo/agent-service:latest
+          image: GCP_REGION-docker.pkg.dev/GCP_PROJECT_ID/moon-insurance/agent-service:latest
           ports:
             - containerPort: 5002
           env:
