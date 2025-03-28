@@ -14,9 +14,10 @@ spec:
         app: agent-service
         version: green
     spec:
+      serviceAccountName: moon-insurance # Use the KSA you created
       containers:
         - name: agent-service
-          image: GCP_REGION-docker.pkg.dev/GCP_PROJECT_ID/moon-insurance/agent-service:latest
+          image: us-central1-docker.pkg.dev/moon-insurance/moon-insurance/agent-service:latest
           ports:
             - containerPort: 5002
           resources:

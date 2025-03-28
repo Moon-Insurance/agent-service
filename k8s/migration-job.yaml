@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: migrate-db
-          image: ${{ secrets.GKE_REGION }}-docker.pkg.dev/$GCP_PROJECT_ID/moon-insurance/$SERVICE:latest
+          image: GCP_REGION-docker.pkg.dev/GCP_PROJECT_ID/moon-insurance/agent-service:latest
           command: ["/bin/sh", "-c"]
           args:
             - flask db current || flask db upgrade
@@ -17,4 +17,16 @@ spec:
                 secretKeyRef:
                   name: agent-service-db-secret
                   key: DATABASE_URL
+
+            - name: GCP_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-secret
+                  key: GCP_PROJECT_ID
+
+            - name: GCP_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-secret
+                  key: GCP_REGION
       restartPolicy: Never
