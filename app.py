@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 import os
-
+import psycopg2
 from flask_migrate import Migrate
 
 from dotenv import load_dotenv
@@ -68,6 +68,17 @@ def delete_agent(agent_id):
     db.session.delete(agent)
     db.session.commit()
     return jsonify({'message': 'Agent deleted'}), 200
+
+# health check
+@app.route("/health", methods=["GET"])
+def health_check():
+    try:
+        # Test PostgreSQL connection
+        conn = psycopg2.connect(os.getenv('DATABASE_URL'), connect_timeout=3)
+        conn.close()
+        return jsonify({"status": "ok", "db": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "db": "unreachable", "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)
