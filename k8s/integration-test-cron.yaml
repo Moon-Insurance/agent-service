@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: integration-test-agent-service
+spec:
+  schedule: "0 * * * *" # Run every hour (at the start of the hour)
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 600 # Keep pod for 10 min after completion
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: integration-test-agent-service
+              image: us-central1-docker.pkg.dev/moon-insurance/moon-insurance/agent-service:latest
+              command: ["pytest", "tests/integration-test.py"]
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "256Mi"
+              env:
+                - name: BASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: agent-service-url-secret
+                      key: BASE_URL

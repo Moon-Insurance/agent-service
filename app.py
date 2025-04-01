@@ -24,8 +24,8 @@ class Agent(db.Model):
     def as_dict(self):
         return {'agent_id': self.agent_id, 'name': self.name, 'branch': self.branch}
 
-@app.before_first_request
-def create_tables():
+# Create database tables
+with app.app_context():
     db.create_all()
 
 # CREATE NEW AGENT
