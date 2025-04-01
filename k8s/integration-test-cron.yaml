@@ -17,7 +17,6 @@ spec:
           containers:
             - name: integration-test-agent-service
               image: us-central1-docker.pkg.dev/moon-insurance/moon-insurance/agent-service:latest
-              imagePullPolicy: IfNotPresent #avoids unnecessary pulls if the image is already present on the node.
               command: ["pytest", "tests/integration-test.py"]
               resources:
                 requests:
