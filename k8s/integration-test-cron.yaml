@@ -4,10 +4,6 @@ metadata:
   name: integration-test-agent-service
 spec:
   schedule: "0 * * * *" # Run every hour (at the start of the hour)
-  # Keep only the most recent successful and failed jobs
-  successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 1
-  # Prevent concurrent runs if the previous one hasn't finished yet
   jobTemplate:
     spec:
       ttlSecondsAfterFinished: 600 # Keep pod for 10 min after completion
